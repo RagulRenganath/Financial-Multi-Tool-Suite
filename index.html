@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>All-in-One Finance Toolkit</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root{
+    --bg:#f4f7fa; --surface:#ffffff; --muted:#6b7280; --primary:#0f4c81; --accent:#0ea5c9;
+    --radius:12px; --pad:16px; font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#eef2f6,#f4f7fa);color:#07203a; padding:22px;}
+  .wrap{max-width:1150px;margin:0 auto;}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  header h1{margin:0;font-size:20px;color:var(--primary)}
+  header p{margin:0;color:var(--muted);font-size:13px}
+  nav{display:flex;gap:8px;margin:18px 0;flex-wrap:wrap}
+  .tabBtn{background:transparent;border:1px solid rgba(7,32,58,0.06);padding:8px 12px;border-radius:10px;cursor:pointer;color:var(--primary);font-weight:600}
+  .tabBtn.active{background:var(--primary);color:#fff;box-shadow:0 6px 20px rgba(15,76,129,0.12)}
+  .card{background:var(--surface);border-radius:12px;padding:18px;box-shadow:0 6px 20px rgba(12,40,64,0.06);margin-bottom:18px}
+  .grid{display:grid;grid-template-columns:1fr 420px;gap:18px}
+  label{display:block;color:var(--muted);font-size:13px;margin-top:10px}
+  input[type="number"], input[type="text"], select{width:100%;padding:10px;border-radius:8px;border:1px solid #e6eef8;background:#fbfdff;font-size:14px;margin-top:6px}
+  .row{display:flex;gap:10px}
+  .row .col{flex:1}
+  button{margin-top:12px;padding:10px 12px;border-radius:10px;border:none;background:linear-gradient(90deg,var(--primary), var(--accent));color:#fff;font-weight:700;cursor:pointer}
+  .small{font-size:13px;color:var(--muted)}
+  .result{margin-top:12px;padding:10px;border-radius:8px;background:linear-gradient(180deg,rgba(14,165,201,0.06),rgba(15,76,129,0.03));color:var(--primary);font-weight:600}
+  .mutedBox{background:#fbfdff;border:1px solid #eaf2f8;padding:10px;border-radius:8px;color:var(--muted);font-size:13px}
+  canvas{max-width:100%!important;height:260px!important}
+  .expense-list{max-height:220px;overflow:auto;margin-top:8px;border-radius:8px;padding:8px;border:1px dashed #e6eef8}
+  .expense-item{display:flex;justify-content:space-between;padding:6px 8px;border-radius:6px}
+  .flexBetween{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  footer{font-size:12px;color:var(--muted);margin-top:10px}
+  @media(max-width:980px){ .grid{grid-template-columns:1fr} canvas{height:200px!important} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>All-in-One Finance Toolkit</h1>
+        <p class="small">Interest visualizer • Budget breakdown • Loan checker • Savings planner • Offline currency converter</p>
+      </div>
+    </header>
+
+    <nav>
+      <button class="tabBtn active" data-tab="interest">Interest Visualizer</button>
+      <button class="tabBtn" data-tab="budget">Budget Breakdown</button>
+      <button class="tabBtn" data-tab="loan">Loan Affordability</button>
+      <button class="tabBtn" data-tab="savings">Savings Goal Planner</button>
+      <button class="tabBtn" data-tab="currency">Offline Currency Converter</button>
+    </nav>
+
+    <!-- INTEREST VISUALIZER -->
+    <section id="interest" class="card">
+      <div class="grid">
+        <div>
+          <h2 style="margin:0;color:var(--primary)">Financial Interest Visualization</h2>
+          <p class="small">Compare Simple vs Compound interest and see growth over time.</p>
+
+          <label>Principal (₹)</label>
+          <input id="fiPrincipal" type="number" min="0" value="100000" />
+
+          <div class="row">
+            <div class="col">
+              <label>Annual rate (%)</label>
+              <input id="fiRate" type="number" step="0.01" min="0" value="8" />
+            </div>
+            <div class="col">
+              <label>Years</label>
+              <input id="fiYears" type="number" min="1" value="10" />
+            </div>
+          </div>
+
+          <label>Compound frequency</label>
+          <select id="fiFreq">
+            <option value="1">Annually</option>
+            <option value="4">Quarterly</option>
+            <option value="12" selected>Monthly</option>
+            <option value="365">Daily</option>
+          </select>
+
+          <button onclick="runInterest()">Visualize Interest</button>
+          <div class="result" id="fiResult">Click Visualize Interest to see projections.</div>
+        </div>
+
+        <div>
+          <div class="mutedBox"><strong>Notes</strong>
+            <ul style="margin:6px 0 0 18px;padding:0;color:var(--muted)"><li>Simple interest = P × r × t. Compound interest computed per chosen frequency.</li></ul>
+          </div>
+          <div style="margin-top:12px"><canvas id="interestChart"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BUDGET BREAKDOWN -->
+    <section id="budget" class="card" style="display:none">
+      <h2 style="margin:0;color:var(--primary)">Budget Breakdown Visualizer</h2>
+      <p class="small">Add income and category expenses. Chart updates and data saves locally.</p>
+
+      <div style="display:grid;grid-template-columns:1fr 420px;gap:14px">
+        <div>
+          <label>Monthly income (₹)</label>
+          <input id="bdIncome" type="number" min="0" value="60000" />
+
+          <div class="row">
+            <div class="col">
+              <label>Category</label>
+              <input id="bdCat" type="text" placeholder="e.g., Rent, Food" />
+            </div>
+            <div style="width:140px">
+              <label>Amount (₹)</label>
+              <input id="bdAmt" type="number" min="0" value="0" />
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button onclick="bdAdd()">Add</button>
+            <button onclick="bdClear()" style="background:linear-gradient(90deg,#ef4444,#f97316)">Clear</button>
+          </div>
+
+          <div class="expense-list" id="bdList"></div>
+
+          <div style="margin-top:12px">
+            <div class="flexBetween small"><div>Total income</div><div id="bdTotalInc">₹0</div></div>
+            <div class="flexBetween small"><div>Total expenses</div><div id="bdTotalExp">₹0</div></div>
+            <div class="flexBetween" style="margin-top:8px"><div style="font-weight:700">Savings</div><div id="bdSavings" style="font-weight:700">₹0</div></div>
+            <div class="small" id="bdAdvice" style="margin-top:8px"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="mutedBox">Expense mix</div>
+          <canvas id="bdChart" style="margin-top:8px"></canvas>
+          <div style="margin-top:10px" class="small">Tip: Track recurring costs and set limits per category.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOAN AFFORDABILITY -->
+    <section id="loan" class="card" style="display:none">
+      <h2 style="margin:0;color:var(--primary)">Loan Affordability Checker</h2>
+      <p class="small">Estimate EMI for a loan, or compute the maximum loan you can afford given a monthly budget.</p>
+
+      <div style="display:grid;grid-template-columns:1fr 420px;gap:14px">
+        <div>
+          <label>Monthly net take-home (₹)</label>
+          <input id="loanIncome" type="number" min="0" value="60000" />
+
+          <label>Monthly obligations (EMIs, rent, other) (₹)</label>
+          <input id="loanOblig" type="number" min="0" value="15000" />
+
+          <div class="row">
+            <div class="col">
+              <label>Desired loan tenure (years)</label>
+              <input id="loanYears" type="number" min="1" value="10" />
+            </div>
+            <div class="col">
+              <label>Interest rate (annual %)</label>
+              <input id="loanRate" type="number" step="0.01" min="0" value="8.5" />
+            </div>
+          </div>
+
+          <label>Max % of disposable income for EMI (suggested 40%)</label>
+          <input id="loanPerc" type="number" min="1" max="100" value="40" />
+
+          <div style="display:flex;gap:8px">
+            <button onclick="computeLoanMax()">Compute max loan</button>
+            <button onclick="computeEMIfromLoan()" style="background:linear-gradient(90deg,#059669,#10b981)">Compute EMI for loan amount</button>
+          </div>
+
+          <div class="result" id="loanResult">Results will appear here.</div>
+        </div>
+
+        <div>
+          <div class="mutedBox"><strong>How it works</strong>
+            <ul style="margin:6px 0 0 18px;padding:0;color:var(--muted)"><li>This uses a standard EMI formula. Affordability considers monthly take-home minus obligations, and a chosen % cap for EMI.</li></ul>
+          </div>
+          <div style="margin-top:12px">
+            <canvas id="loanChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SAVINGS GOAL -->
+    <section id="savings" class="card" style="display:none">
+      <h2 style="margin:0;color:var(--primary)">Savings Goal Planner</h2>
+      <p class="small">Enter a financial goal and timeframe; get the required monthly savings (SIP) and projection.</p>
+
+      <div class="grid">
+        <div>
+          <label>Target goal (₹)</label>
+          <input id="goalAmt" type="number" min="0" value="1000000" />
+
+          <div class="row">
+            <div class="col">
+              <label>Years to reach</label>
+              <input id="goalYears" type="number" min="1" value="7" />
+            </div>
+            <div class="col">
+              <label>Expected annual return (%)</label>
+              <input id="goalRate" type="number" step="0.01" min="0" value="10" />
+            </div>
+          </div>
+
+          <button onclick="planSavings()">Calculate monthly savings</button>
+
+          <div class="result" id="goalResult">Monthly required deposit will appear here.</div>
+        </div>
+
+        <div>
+          <div class="mutedBox">Projection</div>
+          <div style="margin-top:12px"><canvas id="goalChart"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CURRENCY CONVERTER -->
+    <section id="currency" class="card" style="display:none">
+      <h2 style="margin:0;color:var(--primary)">Offline Currency Converter</h2>
+      <p class="small">Preloaded rates (editable). Convert between currencies without internet.</p>
+
+      <div style="display:grid;grid-template-columns:1fr 420px;gap:14px">
+        <div>
+          <label>Amount</label>
+          <input id="convAmt" type="number" min="0" value="1000" />
+
+          <label>From</label>
+          <select id="convFrom"></select>
+
+          <label>To</label>
+          <select id="convTo"></select>
+
+          <div style="display:flex;gap:8px">
+            <button onclick="doConvert()">Convert</button>
+            <button onclick="resetRates()" style="background:linear-gradient(90deg,#ef4444,#f97316)">Reset rates</button>
+          </div>
+
+          <div class="result" id="convResult">Converted amount will appear here.</div>
+
+          <div style="margin-top:8px" class="small">Edit base rates below (rates are expressed as 1 unit of that currency = X INR). Update and convert offline.</div>
+          <div style="margin-top:8px">
+            <textarea id="ratesBox" style="width:100%;height:120px;border-radius:8px;padding:8px;border:1px solid #e6eef8;font-family:monospace">{"INR":1,"USD":83.00,"EUR":90.50,"GBP":110.20,"AED":22.60}</textarea>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button onclick="saveRates()">Save rates</button>
+              <button onclick="loadRates()">Load rates</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="mutedBox">Quick reference</div>
+          <div style="margin-top:12px" class="small">This converter uses local JSON rates. Edit rates if you want to change the base (default base: INR). No APIs used.</div>
+          <div style="margin-top:12px">
+            <pre id="ratesPreview" style="background:#fbfdff;padding:10px;border-radius:8px;border:1px solid #e6eef8"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="small">Single-file demo for class projects. All data stays in your browser (localStorage). Charts by Chart.js.</div>
+    </footer>
+  </div>
+
+<script>
+/* ---------------- Tabs ---------------- */
+document.querySelectorAll('.tabBtn').forEach(btn=>{
+  btn.addEventListener('click', ()=> {
+    document.querySelectorAll('.tabBtn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('section.card').forEach(s=>s.style.display='none');
+    const id = btn.getAttribute('data-tab');
+    document.getElementById(id).style.display = '';
+    // Update charts
+    if(window.interestChart) window.interestChart.update();
+    if(window.bdChart) window.bdChart.update();
+    if(window.loanChart) window.loanChart.update();
+    if(window.goalChart) window.goalChart.update();
+  });
+});
+
+/* ---------------- Utility ---------------- */
+function numberWithCommas(x){ return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+function fmtINR(x){ return '₹' + numberWithCommas(Number(x).toFixed(0)); }
+function safeNum(v){ return Number(v) || 0; }
+
+/* ---------------- Interest Visualizer ---------------- */
+function runInterest(){
+  const P = safeNum(document.getElementById('fiPrincipal').value);
+  const annual = safeNum(document.getElementById('fiRate').value)/100;
+  const years = Math.max(1, Math.floor(safeNum(document.getElementById('fiYears').value)));
+  const freq = Math.max(1, Math.floor(safeNum(document.getElementById('fiFreq').value)));
+
+  if(P <= 0 || years < 1){ alert('Enter positive principal and years.'); return; }
+
+  const labels = [];
+  const simpleVals = [];
+  const compoundVals = [];
+
+  for(let y=0;y<=years;y++){
+    labels.push(y + 'y');
+    // Simple interest: A = P*(1 + r*t)
+    simpleVals.push(P * (1 + annual * y));
+    // Compound: A = P * (1 + annual/freq)^(freq*y)
+    compoundVals.push(P * Math.pow(1 + annual/freq, freq*y));
+  }
+
+  // results text
+  const simpleFinal = simpleVals[simpleVals.length-1];
+  const compFinal = compoundVals[compoundVals.length-1];
+  document.getElementById('fiResult').innerText = `After ${years} years — Simple: ${fmtINR(simpleFinal)}, Compound: ${fmtINR(compFinal)} (Compound gain: ${fmtINR(compFinal - simpleFinal)})`;
+
+  // chart
+  const ctx = document.getElementById('interestChart').getContext('2d');
+  if(window.interestChart) window.interestChart.destroy();
+  window.interestChart = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {label:'Simple (₹)', data:simpleVals.map(v=>v.toFixed(0)), tension:0.25, fill:false},
+        {label:'Compound (₹)', data:compoundVals.map(v=>v.toFixed(0)), tension:0.25, fill:true}
+      ]
+    },
+    options:{interaction:{mode:'index',intersect:false},scales:{y:{ticks:{callback: function(v){return '₹'+(v>=1e5?Math.round(v/1000)+'k':v)}}}}}
+  });
+}
+
+/* ---------------- Budget Breakdown ---------------- */
+let bdExpenses = JSON.parse(localStorage.getItem('bd_expenses') || '[]');
+function bdRender(){
+  const list = document.getElementById('bdList'); list.innerHTML = '';
+  bdExpenses.forEach((e,i)=>{
+    const div = document.createElement('div'); div.className='expense-item';
+    div.innerHTML = `<div>${escapeHtml(e.cat)}</div><div style="display:flex;gap:8px;align-items:center"><div>₹${numberWithCommas(e.amt.toFixed(0))}</div><button onclick="bdRemove(${i})" style="background:transparent;border:none;color:#ef4444;cursor:pointer">✕</button></div>`;
+    list.appendChild(div);
+  });
+  bdUpdateSummary();
+}
+function bdAdd(){
+  const cat = document.getElementById('bdCat').value.trim();
+  const amt = safeNum(document.getElementById('bdAmt').value);
+  if(!cat || amt <= 0){ alert('Enter category and positive amount'); return; }
+  bdExpenses.push({cat, amt}); localStorage.setItem('bd_expenses', JSON.stringify(bdExpenses));
+  document.getElementById('bdCat').value=''; document.getElementById('bdAmt').value='0';
+  bdRender();
+}
+function bdRemove(i){ bdExpenses.splice(i,1); localStorage.setItem('bd_expenses', JSON.stringify(bdExpenses)); bdRender(); }
+function bdClear(){ if(confirm('Clear all budget items?')){ bdExpenses=[]; localStorage.removeItem('bd_expenses'); bdRender(); } }
+function bdUpdateSummary(){
+  const income = safeNum(document.getElementById('bdIncome').value);
+  const totExp = bdExpenses.reduce((s,e)=>s+e.amt,0);
+  const saving = Math.max(0, income - totExp);
+  document.getElementById('bdTotalInc').innerText = fmtINR(income);
+  document.getElementById('bdTotalExp').innerText = fmtINR(totExp);
+  document.getElementById('bdSavings').innerText = fmtINR(saving);
+  const ratio = income>0 ? (totExp/income)*100 : 0;
+  const advice = ratio>85 ? 'High spending — trim discretionary items.' : ratio>60 ? 'Manageable — monitor variable costs.' : 'Good savings rate.';
+  document.getElementById('bdAdvice').innerText = `Expense-to-income: ${ratio.toFixed(1)}%. ${advice}`;
+
+  // chart
+  const labels = bdExpenses.map(e=>e.cat);
+  const data = bdExpenses.map(e=>e.amt);
+  const ctx = document.getElementById('bdChart').getContext('2d');
+  if(window.bdChart) window.bdChart.destroy();
+  window.bdChart = new Chart(ctx, {type:'pie',data:{labels,datasets:[{data}]},options:{plugins:{legend:{position:'bottom'}}}});
+}
+function escapeHtml(s){ return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+
+/* ---------------- Loan Affordability ---------------- */
+/* EMI formula: EMI = P * r * (1+r)^n / ((1+r)^n - 1), r = monthly rate, n = months
+   Inverse (max principal) P = EMI * (1 - (1+r)^-n) / r
+*/
+function computeLoanMax(){
+  const income = safeNum(document.getElementById('loanIncome').value);
+  const obligations = safeNum(document.getElementById('loanOblig').value);
+  const years = Math.max(1, Math.floor(safeNum(document.getElementById('loanYears').value)));
+  const annualRate = safeNum(document.getElementById('loanRate').value)/100;
+  const capPerc = Math.min(100, Math.max(1, safeNum(document.getElementById('loanPerc').value)))/100;
+
+  const disposable = Math.max(0, income - obligations);
+  const maxEMI = disposable * capPerc;
+  const n = years*12;
+  const r = annualRate/12;
+
+  // Compute max principal affordable:
+  let maxLoan = 0;
+  if(r === 0){
+    maxLoan = maxEMI * n;
+  } else {
+    maxLoan = maxEMI * (1 - Math.pow(1 + r, -n)) / r;
+  }
+
+  document.getElementById('loanResult').innerText = `Disposable income after obligations: ${fmtINR(disposable)}. Max EMI allowed (@${(capPerc*100).toFixed(0)}%): ${fmtINR(maxEMI)}. \nEstimated max loan for ${years} years at ${ (annualRate*100).toFixed(2) }% = ${fmtINR(maxLoan.toFixed(0))} (EMI ≈ ${fmtINR(maxEMI)})`;
+
+  plotLoanChart(maxLoan, annualRate, n, maxEMI);
+}
+
+function computeEMIfromLoan(){
+  const loanAmt = prompt('Enter loan amount (₹)', '2000000');
+  if(loanAmt === null) return;
+  const P = safeNum(loanAmt);
+  const years = Math.max(1, Math.floor(safeNum(document.getElementById('loanYears').value)));
+  const annualRate = safeNum(document.getElementById('loanRate').value)/100;
+  const n = years*12;
+  const r = annualRate/12;
+
+  let emi = 0;
+  if(r === 0) emi = P / n;
+  else emi = P * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+
+  document.getElementById('loanResult').innerText = `EMI for ₹${numberWithCommas(P.toFixed(0))} over ${years} years at ${(annualRate*100).toFixed(2)}% pa ≈ ${fmtINR(emi.toFixed(0))}`;
+  plotLoanChart(P, annualRate, n, emi);
+}
+
+function plotLoanChart(principal, annualRate, n, emiShown){
+  // Show outstanding principal schedule vs monthly payment (illustrative)
+  const r = annualRate/12;
+  let balance = principal;
+  const labels = [];
+  const balances = [];
+  for(let m=1;m<=n;m++){
+    const interest = balance * r;
+    const principalPaid = Math.min(balance, emiShown - interest);
+    balance = Math.max(0, balance - principalPaid);
+    labels.push(m + 'm');
+    balances.push(balance);
+    if(balance<=0) break;
+  }
+  const ctx = document.getElementById('loanChart').getContext('2d');
+  if(window.loanChart) window.loanChart.destroy();
+  window.loanChart = new Chart(ctx, {type:'line',data:{labels, datasets:[{label:'Outstanding principal (₹)', data:balances.map(v=>Math.round(v))}]}, options:{scales:{y:{ticks:{callback: v=> '₹'+(v>=1e5?Math.round(v/1000)+'k':v)}}}}});
+}
+
+/* ---------------- Savings Goal Planner ---------------- */
+/* PMT formula for future value with end-of-period deposits:
+   FV = PMT * [((1+r)^n - 1)/r]  => PMT = FV * r / ((1+r)^n - 1)
+   r = monthly rate, n = months
+*/
+function planSavings(){
+  const FV = safeNum(document.getElementById('goalAmt').value);
+  const years = Math.max(1, Math.floor(safeNum(document.getElementById('goalYears').value)));
+  const annual = safeNum(document.getElementById('goalRate').value)/100;
+  const n = years*12;
+  const r = annual/12;
+
+  let pmt = 0;
+  if(r === 0) pmt = FV / n;
+  else pmt = FV * r / (Math.pow(1 + r, n) - 1);
+
+  document.getElementById('goalResult').innerText = `To reach ${fmtINR(FV)} in ${years} years at ${(annual*100).toFixed(2)}% pa, you need ≈ ${fmtINR(Math.ceil(pmt))} per month.`;
+
+  // Projection chart
+  const labels = [], values = [];
+  let bal = 0;
+  for(let m=1;m<=n;m++){
+    bal = bal*(1+r) + pmt;
+    labels.push(m + 'm');
+    values.push(Math.round(bal));
+  }
+  const ctx = document.getElementById('goalChart').getContext('2d');
+  if(window.goalChart) window.goalChart.destroy();
+  window.goalChart = new Chart(ctx, {type:'line', data:{labels, datasets:[{label:'Projected corpus (₹)', data:values}]}, options:{scales:{y:{ticks:{callback: v=>'₹'+(v>=1e5?Math.round(v/1000)+'k':v)}}}}});
+}
+
+/* ---------------- Offline Currency Converter ---------------- */
+let rates = {};
+function loadRates(){
+  try{
+    const txt = document.getElementById('ratesBox').value;
+    const r = JSON.parse(txt);
+    rates = r;
+    localStorage.setItem('ft_rates', JSON.stringify(rates));
+    populateCurrencySelectors();
+    showRatesPreview();
+    alert('Rates loaded.');
+  } catch(e){ alert('Invalid JSON. Use {"INR":1,"USD":83.00,...}'); }
+}
+function saveRates(){ loadRates(); }
+function resetRates(){ const def = {"INR":1,"USD":83.00,"EUR":90.50,"GBP":110.20,"AED":22.60}; document.getElementById('ratesBox').value = JSON.stringify(def); loadRates(); }
+
+function populateCurrencySelectors(){
+  const from = document.getElementById('convFrom'); const to = document.getElementById('convTo');
+  from.innerHTML = ''; to.innerHTML = '';
+  Object.keys(rates).forEach(c=>{
+    const o1 = document.createElement('option'); o1.value=c; o1.innerText=c; from.appendChild(o1);
+    const o2 = document.createElement('option'); o2.value=c; o2.innerText=c; to.appendChild(o2);
+  });
+  // set sensible defaults
+  from.value = from.querySelector('option[value="INR"]' ) ? 'INR' : from.options[0].value;
+  to.value = to.querySelector('option[value="USD"]') ? 'USD' : to.options[1] ? to.options[1].value : from.value;
+}
+
+function showRatesPreview(){
+  document.getElementById('ratesPreview').innerText = JSON.stringify(rates, null, 2);
+}
+
+function doConvert(){
+  const amt = safeNum(document.getElementById('convAmt').value);
+  const f = document.getElementById('convFrom').value;
+  const t = document.getElementById('convTo').value;
+  if(!rates[f] || !rates[t]){ alert('Select valid currencies and load rates.'); return; }
+  // rates are expressed as 1 unit currency = X INR. Convert via INR as common base:
+  const inINR = amt * rates[f]; // amount in INR
+  const converted = inINR / rates[t];
+  document.getElementById('convResult').innerText = `${numberWithCommas(amt)} ${f} ≈ ${numberWithCommas(converted.toFixed(4))} ${t}`;
+}
+
+/* ---------------- Init ---------------- */
+(function init(){
+  // load stored rates or default
+  const storedRates = localStorage.getItem('ft_rates');
+  if(storedRates){ document.getElementById('ratesBox').value = storedRates; }
+  loadRates();
+
+  // budget data
+  const storedBd = localStorage.getItem('bd_expenses');
+  if(storedBd) bdExpenses = JSON.parse(storedBd);
+  bdRender();
+
+  // run default interest visualizer
+  runInterest();
+})();
+</script>
+</body>
+</html>
